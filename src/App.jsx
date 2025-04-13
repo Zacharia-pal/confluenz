@@ -1,48 +1,46 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.jsx
+import React, { useEffect, useState } from 'react'
+import MarkdownView from './components/MarkdownView'
+import FileTree from './components/FileTree'
+import Editor from './components/Editor'
+import Login from './components/Login'
+
+const GITHUB_REPO = 'zacharia-pal/confluenz' // Replace this
+const BRANCH = 'main'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [token, setToken] = useState('')
+  const [selectedPath, setSelectedPath] = useState(null)
+  const [fileContent, setFileContent] = useState('')
+  const [mode, setMode] = useState('view') // or 'edit'
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app" style={{ display: 'flex', height: '100vh' }}>
+      <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '1rem' }}>
+        <Login token={token} setToken={setToken} />
+        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+      <div style={{ flex: 1, padding: '1rem' }}>
+        {mode === 'view' && (
+          <>
+            <button onClick={() => setMode('edit')}>Edit</button>
+            <MarkdownView token={token} repo={GITHUB_REPO} branch={BRANCH} path={selectedPath} />
+          </>
+        )}
+
+        {mode === 'edit' && (
+          <Editor
+            token={token}
+            repo={GITHUB_REPO}
+            branch={BRANCH}
+            path={selectedPath}
+            onDone={() => setMode('view')}
+          />
+        )}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
 }
-
-import CreateFileForm from './components/CreateFileForm';
-import { createFile } from './utils/github';
-
-// Inside the component:
-const createNewFile = async (path, content) => {
-  await createFile(octokit, OWNER, REPO, path, content);
-  alert('File created!');
-};
-
-// Inside JSX:
-<CreateFileForm onCreate={createNewFile} />
-
 
 export default App
