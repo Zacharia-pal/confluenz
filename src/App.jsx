@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import FileTree from './components/FileTree'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
@@ -9,6 +9,8 @@ export default function App() {
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
+  const selectedPathRef = useRef(null)
+  selectedPathRef.current = selectedPath
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -20,7 +22,7 @@ export default function App() {
       .then(data => {
         const content = atob(data.content)
         setFileContent(content)
-        setEditMode(false) // default to view mode when selecting
+        setEditMode(false)
       })
   }, [selectedPath, token])
 
@@ -47,6 +49,21 @@ export default function App() {
       })
   }
 
+  const createFile = (path, defaultContent = "# New Page") => {
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: `Create ${path}`,
+        content: btoa(defaultContent),
+        branch: BRANCH,
+      }),
+    }).then(() => window.location.reload())
+  }
+
   return (
     <div style={{ display: 'flex', gap: '2rem', padding: '1rem' }}>
       <div>
@@ -59,64 +76,63 @@ export default function App() {
         />
         <br /><br />
 
-        {/* ➕ Create new file */}
         <button onClick={() => {
           const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
           if (!newPath || !token) return
-
-          fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newPath}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `token ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: `Create ${newPath}`,
-              content: btoa("# New Page"),
-              branch: BRANCH,
-            }),
-          }).then(() => window.location.reload())
+          createFile(newPath)
         }}>
           ➕ New Page
         </button>
 
         <br /><br />
 
-        {/* 📁 Create new folder */}
         <button onClick={() => {
           const folderPath = prompt("Enter new folder path (e.g., docs/myfolder)")
           if (!folderPath || !token) return
 
           const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
-
-          fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${placeholderFile}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `token ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: `Create folder ${folderPath}`,
-              content: btoa("placeholder"),
-              branch: BRANCH,
-            }),
-          }).then(() => window.location.reload())
+          createFile(placeholderFile, "placeholder")
         }}>
           📁 New Folder
         </button>
 
         <br /><br />
-        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
+
+        <FileTree
+          token={token}
+          setSelectedPath={setSelectedPath}
+          repo={GITHUB_REPO}
+          branch={BRANCH}
+        />
       </div>
 
       <div style={{ flex: 1 }}>
         {selectedPath && (
           <>
-            <h2>{selectedPath}</h2>
+            <h2>{selectedPath.replace(/\.md$/, '')}</h2>
+
             <button onClick={() => setEditMode(!editMode)}>
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
+
             <br /><br />
+
+            <button onClick={() => {
+              const subName = prompt("Subpage name (e.g. notes.md)")
+              if (!subName || !selectedPath || !token) return
+
+              const parentPath = selectedPath.endsWith('.md')
+                ? selectedPath.replace(/\.md$/, '')
+                : selectedPath
+
+              const newSubPath = `${parentPath}/${subName}`
+              createFile(newSubPath)
+            }}>
+              ➕ Add Subpage
+            </button>
+
+            <br /><br />
+
             {editMode ? (
               <textarea
                 style={{ width: '100%', height: '400px' }}
@@ -138,12 +154,14 @@ export default function App() {
                 {fileContent}
               </div>
             )}
+
             {editMode && (
               <>
                 <br />
                 <button onClick={handleSave}>💾 Save</button>
               </>
             )}
+
             <button
               style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
               onClick={async () => {
