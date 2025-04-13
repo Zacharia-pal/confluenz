@@ -1,102 +1,131 @@
-// src/App.jsx
-import React, { useEffect, useState } from 'react'
-import MarkdownView from './components/MarkdownView'
+import React, { useState, useEffect } from 'react'
 import FileTree from './components/FileTree'
-import Editor from './components/Editor'
-import Login from './components/Login'
 
-const GITHUB_REPO = 'zacharia-pal/confluenz' // Replace this
-const BRANCH = 'main'
+const GITHUB_REPO = "zacharia-pal/confluenz" // 🔁 Replace this
+const BRANCH = "main"
 
-function App() {
-  const [token, setToken] = useState('')
+export default function App() {
+  const [token, setToken] = useState("")
   const [selectedPath, setSelectedPath] = useState(null)
-  const [fileContent, setFileContent] = useState('')
-  const [mode, setMode] = useState('view') // or 'edit'
+  const [fileContent, setFileContent] = useState("")
+
+  useEffect(() => {
+    if (!selectedPath || !token) return
+
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
+      headers: { Authorization: `token ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        const content = atob(data.content)
+        setFileContent(content)
+      })
+  }, [selectedPath, token])
+
+  function handleSave() {
+    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
+      method: 'GET',
+      headers: { Authorization: `token ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `token ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `Update ${selectedPath}`,
+            content: btoa(fileContent),
+            sha: data.sha,
+            branch: BRANCH,
+          }),
+        }).then(() => alert("Saved!"))
+      })
+  }
 
   return (
-    <div className="app" style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '1rem' }}>
-        <Login token={token} setToken={setToken} />
-        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
-<hr />
-<button onClick={() => {
-  const newPath = prompt("Enter new file path (e.g., folder/newpage.md)")
-  if (!newPath || !token) return
+    <div style={{ display: 'flex', gap: '2rem', padding: '1rem' }}>
+      <div>
+        <h1>🧠 Confluenz</h1>
+        <input
+          type="password"
+          placeholder="Enter GitHub Token"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        <br /><br />
 
-  fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newPath}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `token ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: `Create ${newPath}`,
-      content: btoa("# New Page"),
-      branch: BRANCH,
-    }),
-  }).then(() => window.location.reload())
-}}>
-  ➕ New Page
-</button>
+        {/* ➕ Create new file */}
+        <button onClick={() => {
+          const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
+          if (!newPath || !token) return
 
+          fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newPath}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `token ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: `Create ${newPath}`,
+              content: btoa("# New Page"),
+              branch: BRANCH,
+            }),
+          }).then(() => window.location.reload())
+        }}>
+          ➕ New Page
+        </button>
+
+        <br /><br />
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
-      <div style={{ flex: 1, padding: '1rem' }}>
-        {mode === 'view' && (
+      <div style={{ flex: 1 }}>
+        {selectedPath && (
           <>
-            <button onClick={() => setMode('edit')}>Edit</button>
-            <MarkdownView token={token} repo={GITHUB_REPO} branch={BRANCH} path={selectedPath} />
+            <h2>{selectedPath}</h2>
+            <textarea
+              style={{ width: '100%', height: '400px' }}
+              value={fileContent}
+              onChange={(e) => setFileContent(e.target.value)}
+            />
+            <br />
+            <button onClick={handleSave}>💾 Save</button>
+            <button
+              style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
+              onClick={async () => {
+                if (!confirm(`Are you sure you want to delete ${selectedPath}?`)) return
+
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
+                  headers: { Authorization: `token ${token}` },
+                })
+                const data = await res.json()
+
+                await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
+                  method: 'DELETE',
+                  headers: {
+                    Authorization: `token ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    message: `Delete ${selectedPath}`,
+                    sha: data.sha,
+                    branch: BRANCH,
+                  }),
+                })
+
+                alert("File deleted.")
+                setSelectedPath(null)
+                setFileContent("")
+              }}
+            >
+              🗑 Delete
+            </button>
           </>
         )}
-
-        {mode === 'edit' && (
-          <Editor
-            token={token}
-            repo={GITHUB_REPO}
-            branch={BRANCH}
-            path={selectedPath}
-            onDone={() => setMode('view')}
-          />
-        )}
-
-{selectedPath && (
-  <button
-    style={{ background: 'red', color: 'white', marginLeft: '1rem' }}
-    onClick={async () => {
-      if (!confirm(`Delete ${selectedPath}?`)) return
-
-      // Get SHA first
-      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
-        headers: { Authorization: `token ${token}` },
-      })
-      const data = await res.json()
-
-      await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `token ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: `Delete ${selectedPath}`,
-          sha: data.sha,
-          branch: BRANCH,
-        }),
-      })
-
-      alert(`${selectedPath} deleted`)
-      window.location.reload()
-    }}
-  >
-    🗑 Delete
-  </button>
-)}
-
       </div>
     </div>
   )
 }
-
-export default App
