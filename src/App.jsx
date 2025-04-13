@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { marked } from 'marked'
 import FileTree from './components/FileTree'
 
-const GITHUB_REPO = "zacharia-pal/confluenz" // 🔁 Replace this
+const GITHUB_REPO = "your-username/your-repo"  // 🔁 Replace with your repo
 const BRANCH = "main"
 
 export default function App() {
   const [token, setToken] = useState("")
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
+  const [mode, setMode] = useState("view")  // "view" or "edit"
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -86,11 +88,27 @@ export default function App() {
         {selectedPath && (
           <>
             <h2>{selectedPath}</h2>
-            <textarea
-              style={{ width: '100%', height: '400px' }}
-              value={fileContent}
-              onChange={(e) => setFileContent(e.target.value)}
-            />
+            {mode === "edit" ? (
+              <textarea
+                style={{ width: '100%', height: '400px' }}
+                value={fileContent}
+                onChange={(e) => setFileContent(e.target.value)}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '400px',
+                  padding: '1rem',
+                  backgroundColor: '#f4f4f4',
+                  borderRadius: '8px',
+                  whiteSpace: 'pre-wrap', // preserves formatting
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: marked(fileContent), // Renders markdown content
+                }}
+              />
+            )}
             <br />
             <button onClick={handleSave}>💾 Save</button>
             <button
@@ -122,6 +140,12 @@ export default function App() {
               }}
             >
               🗑 Delete
+            </button>
+            <button
+              style={{ marginLeft: '1rem', backgroundColor: '#007bff', color: 'white' }}
+              onClick={() => setMode(mode === "edit" ? "view" : "edit")}
+            >
+              {mode === "edit" ? "👁️ View Mode" : "✏️ Edit Mode"}
             </button>
           </>
         )}
