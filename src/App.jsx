@@ -72,53 +72,51 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '2rem', padding: '1rem' }}>
-      <div>
-        <h1>🧠 Confluenz</h1>
+    <div style={styles.container}>
+      <div style={styles.sidebar}>
+        <h1 style={styles.header}>🧠 Confluenz</h1>
         <input
           type="password"
           placeholder="Enter GitHub Token"
           value={token}
           onChange={(e) => setToken(e.target.value)}
+          style={styles.input}
         />
-        <br /><br />
+        <br />
 
-        {/* Button to create a new markdown file */}
         <button onClick={() => {
           const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
           if (!newPath || !token) return
           createFile(newPath)
-        }}>
+        }} style={styles.button}>
           ➕ New Page
         </button>
 
-        <br /><br />
+        <br />
 
-        {/* Button to create a new folder */}
         <button onClick={() => {
           const folderPath = prompt("Enter new folder path (e.g., docs/myfolder)")
           if (!folderPath || !token) return
           createFolder(folderPath)
-        }}>
+        }} style={styles.button}>
           📁 New Folder
         </button>
 
-        <br /><br />
+        <br />
 
-        {/* Render File Tree */}
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
-      <div style={{ flex: 1 }}>
+      <div style={styles.mainContent}>
         {selectedPath && (
           <>
-            <h2>{selectedPath}</h2>
-            <button onClick={() => setEditMode(!editMode)}>
+            <h2 style={styles.selectedPath}>{selectedPath}</h2>
+            <button onClick={() => setEditMode(!editMode)} style={styles.toggleButton}>
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
-            <br /><br />
+            <br />
 
-            {/* Button to add a subpage */}
+            {/* Add Subpage */}
             <button onClick={() => {
               const subName = prompt("Subpage name (e.g. notes.md)")
               if (!subName || !selectedPath || !token) return
@@ -129,30 +127,20 @@ export default function App() {
 
               const newSubPath = `${parentDir}${subName}`
               createFile(newSubPath)
-            }}>
+            }} style={styles.button}>
               ➕ Add Subpage
             </button>
-            <br /><br />
+            <br />
 
-            {/* Display the markdown file content */}
+            {/* File Content Display or Edit */}
             {editMode ? (
               <textarea
-                style={{ width: '100%', height: '400px' }}
+                style={styles.textarea}
                 value={fileContent}
                 onChange={(e) => setFileContent(e.target.value)}
               />
             ) : (
-              <div
-                style={{
-                  width: '100%',
-                  height: '400px',
-                  padding: '1rem',
-                  backgroundColor: '#f9f9f9',
-                  whiteSpace: 'pre-wrap',
-                  border: '1px solid #ccc',
-                  overflowY: 'auto',
-                }}
-              >
+              <div style={styles.fileContent}>
                 {fileContent}
               </div>
             )}
@@ -160,13 +148,13 @@ export default function App() {
             {editMode && (
               <>
                 <br />
-                <button onClick={handleSave}>💾 Save</button>
+                <button onClick={handleSave} style={styles.saveButton}>💾 Save</button>
               </>
             )}
 
             {/* Delete Button */}
             <button
-              style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
+              style={styles.deleteButton}
               onClick={async () => {
                 if (!confirm(`Are you sure you want to delete ${selectedPath}?`)) return
 
@@ -200,4 +188,112 @@ export default function App() {
       </div>
     </div>
   )
+}
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '2rem',
+    padding: '1rem',
+    backgroundColor: 'white',
+    color: '#333',
+    fontFamily: 'Arial, sans-serif',
+  },
+  sidebar: {
+    flex: '0 0 250px',
+    backgroundColor: '#f5f5f5',
+    padding: '1rem',
+    borderRadius: '8px',
+    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
+  },
+  header: {
+    color: '#1e3a8a',  // Dark blue color
+    fontSize: '24px',
+    fontWeight: 'bold',
+  },
+  input: {
+    padding: '0.5rem',
+    width: '100%',
+    marginBottom: '1rem',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+  },
+  button: {
+    backgroundColor: '#1e3a8a',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    marginBottom: '1rem',
+    width: '100%',
+    fontSize: '16px',
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    padding: '1rem',
+    borderRadius: '8px',
+    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
+    maxWidth: '100%',
+  },
+  selectedPath: {
+    color: '#1e3a8a',
+    fontSize: '20px',
+    marginBottom: '1rem',
+  },
+  toggleButton: {
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    padding: '0.5rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    marginBottom: '1rem',
+  },
+  textarea: {
+    width: '100%',
+    height: '300px',
+    padding: '1rem',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontFamily: 'monospace',
+    fontSize: '16px',
+  },
+  fileContent: {
+    width: '100%',
+    padding: '1rem',
+    backgroundColor: '#f9f9f9',
+    whiteSpace: 'pre-wrap',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontFamily: 'monospace',
+    fontSize: '16px',
+  },
+  saveButton: {
+    backgroundColor: '#10b981',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    marginTop: '1rem',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    marginTop: '1rem',
+  },
+}
+
+// Ensure responsiveness for mobile screens
+const mediaQuery = window.matchMedia('(max-width: 768px)');
+if (mediaQuery.matches) {
+  styles.container.flexDirection = 'column';
+  styles.sidebar.flex = '0 0 auto';
 }
