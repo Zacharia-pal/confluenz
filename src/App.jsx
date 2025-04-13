@@ -190,8 +190,9 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'row',
-    height: '100vh', // Make sure the container fills the full viewport height
-    minHeight: '100vh', // Ensures that the layout doesn't shrink below viewport height
+    width: '100%',  // Ensure the container takes up the entire width
+    height: '100vh', // Full viewport height
+    minHeight: '100vh', // Prevent shrinking below viewport height
     gap: '2rem',
     padding: '1rem',
     backgroundColor: 'white',
@@ -204,11 +205,13 @@ const styles = {
     padding: '1rem',
     borderRadius: '8px',
     boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
-    height: '100%', // Sidebar fills entire height
-    overflowY: 'auto', // Allow scrolling in case of overflow
+    height: '100%',
+    overflowY: 'auto',
+    width: '100%',
+    maxWidth: '250px', // Sidebar has a max width
   },
   header: {
-    color: '#1e3a8a',  // Dark blue color
+    color: '#1e3a8a',
     fontSize: '24px',
     fontWeight: 'bold',
   },
@@ -236,9 +239,10 @@ const styles = {
     padding: '1rem',
     borderRadius: '8px',
     boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
-    height: '100%', // Content area fills the entire height
-    overflowY: 'auto', // Allow scrolling in case of overflow
-    maxWidth: '100%',
+    height: '100%',
+    overflowY: 'auto',
+    width: '100%',
+    maxWidth: 'calc(100% - 300px)', // Ensures it does not overflow the sidebar
   },
   selectedPath: {
     color: '#1e3a8a',
@@ -292,3 +296,4 @@ const styles = {
     marginTop: '1rem',
   },
 }
+
