@@ -10,6 +10,7 @@ export default function App() {
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
 
+  // Fetch file content based on selected file path
   useEffect(() => {
     if (!selectedPath || !token) return
 
@@ -18,12 +19,13 @@ export default function App() {
     })
       .then(res => res.json())
       .then(data => {
-        const content = atob(data.content)
+        const content = atob(data.content) // Decode the content from base64
         setFileContent(content)
-        setEditMode(false)
+        setEditMode(false) // Set the default mode to view (non-editing)
       })
   }, [selectedPath, token])
 
+  // Save the file when editing is done
   function handleSave() {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
       method: 'GET',
@@ -39,7 +41,7 @@ export default function App() {
           },
           body: JSON.stringify({
             message: `Update ${selectedPath}`,
-            content: btoa(fileContent),
+            content: btoa(fileContent), // Encode content back to base64
             sha: data.sha,
             branch: BRANCH,
           }),
@@ -47,6 +49,7 @@ export default function App() {
       })
   }
 
+  // Create a new file on GitHub
   const createFile = (path, defaultContent = "# New Page") => {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${path}`, {
       method: 'PUT',
@@ -56,10 +59,16 @@ export default function App() {
       },
       body: JSON.stringify({
         message: `Create ${path}`,
-        content: btoa(defaultContent),
+        content: btoa(defaultContent), // Encode content as base64
         branch: BRANCH,
       }),
-    }).then(() => window.location.reload())
+    }).then(() => window.location.reload()) // Reload after creating the file
+  }
+
+  // Create a folder with a placeholder file
+  const createFolder = (folderPath) => {
+    const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
+    createFile(placeholderFile, "placeholder")
   }
 
   return (
@@ -74,6 +83,7 @@ export default function App() {
         />
         <br /><br />
 
+        {/* Button to create a new markdown file */}
         <button onClick={() => {
           const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
           if (!newPath || !token) return
@@ -84,17 +94,18 @@ export default function App() {
 
         <br /><br />
 
+        {/* Button to create a new folder */}
         <button onClick={() => {
           const folderPath = prompt("Enter new folder path (e.g., docs/myfolder)")
           if (!folderPath || !token) return
-
-          const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
-          createFile(placeholderFile, "placeholder")
+          createFolder(folderPath)
         }}>
           📁 New Folder
         </button>
 
         <br /><br />
+
+        {/* Render File Tree */}
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
@@ -107,7 +118,7 @@ export default function App() {
             </button>
             <br /><br />
 
-            {/* ➕ Add subpage */}
+            {/* Button to add a subpage */}
             <button onClick={() => {
               const subName = prompt("Subpage name (e.g. notes.md)")
               if (!subName || !selectedPath || !token) return
@@ -123,6 +134,7 @@ export default function App() {
             </button>
             <br /><br />
 
+            {/* Display the markdown file content */}
             {editMode ? (
               <textarea
                 style={{ width: '100%', height: '400px' }}
@@ -151,6 +163,8 @@ export default function App() {
                 <button onClick={handleSave}>💾 Save</button>
               </>
             )}
+
+            {/* Delete Button */}
             <button
               style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
               onClick={async () => {
