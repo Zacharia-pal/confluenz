@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import FileTree from './components/FileTree'
-import { marked } from 'marked'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
@@ -21,7 +20,7 @@ export default function App() {
       .then(data => {
         const content = atob(data.content)
         setFileContent(content)
-        setEditMode(false) // default to view mode when switching files
+        setEditMode(false) // default to view mode when selecting
       })
   }, [selectedPath, token])
 
@@ -51,7 +50,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', gap: '2rem', padding: '1rem' }}>
       <div>
-        <h1>Confluenz</h1>
+        <h1>🧠 Confluenz</h1>
         <input
           type="password"
           placeholder="Enter GitHub Token"
@@ -60,6 +59,7 @@ export default function App() {
         />
         <br /><br />
 
+        {/* ➕ Create new file */}
         <button onClick={() => {
           const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
           if (!newPath || !token) return
@@ -81,6 +81,31 @@ export default function App() {
         </button>
 
         <br /><br />
+
+        {/* 📁 Create new folder */}
+        <button onClick={() => {
+          const folderPath = prompt("Enter new folder path (e.g., docs/myfolder)")
+          if (!folderPath || !token) return
+
+          const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
+
+          fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${placeholderFile}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `token ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: `Create folder ${folderPath}`,
+              content: btoa("placeholder"),
+              branch: BRANCH,
+            }),
+          }).then(() => window.location.reload())
+        }}>
+          📁 New Folder
+        </button>
+
+        <br /><br />
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
@@ -88,14 +113,10 @@ export default function App() {
         {selectedPath && (
           <>
             <h2>{selectedPath}</h2>
-
-            {/* 🔁 View/Edit Toggle */}
             <button onClick={() => setEditMode(!editMode)}>
-              {editMode ? "👁 View Mode" : "✏️ Edit Mode"}
+              {editMode ? "👁 View" : "✏️ Edit"}
             </button>
-
             <br /><br />
-
             {editMode ? (
               <textarea
                 style={{ width: '100%', height: '400px' }}
@@ -104,13 +125,25 @@ export default function App() {
               />
             ) : (
               <div
-                style={{ border: '1px solid #ccc', padding: '1rem' }}
-                dangerouslySetInnerHTML={{ __html: marked.parse(fileContent) }}
-              />
+                style={{
+                  width: '100%',
+                  height: '400px',
+                  padding: '1rem',
+                  backgroundColor: '#f9f9f9',
+                  whiteSpace: 'pre-wrap',
+                  border: '1px solid #ccc',
+                  overflowY: 'auto',
+                }}
+              >
+                {fileContent}
+              </div>
             )}
-
-            <br />
-            {editMode && <button onClick={handleSave}>💾 Save</button>}
+            {editMode && (
+              <>
+                <br />
+                <button onClick={handleSave}>💾 Save</button>
+              </>
+            )}
             <button
               style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
               onClick={async () => {
