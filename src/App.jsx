@@ -10,7 +10,6 @@ export default function App() {
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
 
-  // Fetch file content based on selected file path
   useEffect(() => {
     if (!selectedPath || !token) return
 
@@ -19,13 +18,12 @@ export default function App() {
     })
       .then(res => res.json())
       .then(data => {
-        const content = atob(data.content) // Decode the content from base64
+        const content = atob(data.content)
         setFileContent(content)
-        setEditMode(false) // Set the default mode to view (non-editing)
+        setEditMode(false)
       })
   }, [selectedPath, token])
 
-  // Save the file when editing is done
   function handleSave() {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
       method: 'GET',
@@ -41,7 +39,7 @@ export default function App() {
           },
           body: JSON.stringify({
             message: `Update ${selectedPath}`,
-            content: btoa(fileContent), // Encode content back to base64
+            content: btoa(fileContent),
             sha: data.sha,
             branch: BRANCH,
           }),
@@ -49,7 +47,6 @@ export default function App() {
       })
   }
 
-  // Create a new file on GitHub
   const createFile = (path, defaultContent = "# New Page") => {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${path}`, {
       method: 'PUT',
@@ -59,13 +56,12 @@ export default function App() {
       },
       body: JSON.stringify({
         message: `Create ${path}`,
-        content: btoa(defaultContent), // Encode content as base64
+        content: btoa(defaultContent),
         branch: BRANCH,
       }),
-    }).then(() => window.location.reload()) // Reload after creating the file
+    }).then(() => window.location.reload())
   }
 
-  // Create a folder with a placeholder file
   const createFolder = (folderPath) => {
     const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
     createFile(placeholderFile, "placeholder")
@@ -194,6 +190,8 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'row',
+    height: '100vh', // Make sure the container fills the full viewport height
+    minHeight: '100vh', // Ensures that the layout doesn't shrink below viewport height
     gap: '2rem',
     padding: '1rem',
     backgroundColor: 'white',
@@ -206,6 +204,8 @@ const styles = {
     padding: '1rem',
     borderRadius: '8px',
     boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
+    height: '100%', // Sidebar fills entire height
+    overflowY: 'auto', // Allow scrolling in case of overflow
   },
   header: {
     color: '#1e3a8a',  // Dark blue color
@@ -236,6 +236,8 @@ const styles = {
     padding: '1rem',
     borderRadius: '8px',
     boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
+    height: '100%', // Content area fills the entire height
+    overflowY: 'auto', // Allow scrolling in case of overflow
     maxWidth: '100%',
   },
   selectedPath: {
@@ -289,11 +291,4 @@ const styles = {
     cursor: 'pointer',
     marginTop: '1rem',
   },
-}
-
-// Ensure responsiveness for mobile screens
-const mediaQuery = window.matchMedia('(max-width: 768px)');
-if (mediaQuery.matches) {
-  styles.container.flexDirection = 'column';
-  styles.sidebar.flex = '0 0 auto';
 }
