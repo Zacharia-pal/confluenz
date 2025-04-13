@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { marked } from 'marked'
 import FileTree from './components/FileTree'
+import { marked } from 'marked'
 
-const GITHUB_REPO = "your-username/your-repo"  // 🔁 Replace with your repo
+const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
 
 export default function App() {
   const [token, setToken] = useState("")
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
-  const [mode, setMode] = useState("view")  // "view" or "edit"
+  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -21,6 +21,7 @@ export default function App() {
       .then(data => {
         const content = atob(data.content)
         setFileContent(content)
+        setEditMode(false) // default to view mode when switching files
       })
   }, [selectedPath, token])
 
@@ -50,7 +51,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', gap: '2rem', padding: '1rem' }}>
       <div>
-        <h1>🧠 Confluenz</h1>
+        <h1>Confluenz</h1>
         <input
           type="password"
           placeholder="Enter GitHub Token"
@@ -59,7 +60,6 @@ export default function App() {
         />
         <br /><br />
 
-        {/* ➕ Create new file */}
         <button onClick={() => {
           const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
           if (!newPath || !token) return
@@ -88,7 +88,15 @@ export default function App() {
         {selectedPath && (
           <>
             <h2>{selectedPath}</h2>
-            {mode === "edit" ? (
+
+            {/* 🔁 View/Edit Toggle */}
+            <button onClick={() => setEditMode(!editMode)}>
+              {editMode ? "👁 View Mode" : "✏️ Edit Mode"}
+            </button>
+
+            <br /><br />
+
+            {editMode ? (
               <textarea
                 style={{ width: '100%', height: '400px' }}
                 value={fileContent}
@@ -96,21 +104,13 @@ export default function App() {
               />
             ) : (
               <div
-                style={{
-                  width: '100%',
-                  height: '400px',
-                  padding: '1rem',
-                  backgroundColor: '#f4f4f4',
-                  borderRadius: '8px',
-                  whiteSpace: 'pre-wrap', // preserves formatting
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: marked(fileContent), // Renders markdown content
-                }}
+                style={{ border: '1px solid #ccc', padding: '1rem' }}
+                dangerouslySetInnerHTML={{ __html: marked.parse(fileContent) }}
               />
             )}
+
             <br />
-            <button onClick={handleSave}>💾 Save</button>
+            {editMode && <button onClick={handleSave}>💾 Save</button>}
             <button
               style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
               onClick={async () => {
@@ -140,12 +140,6 @@ export default function App() {
               }}
             >
               🗑 Delete
-            </button>
-            <button
-              style={{ marginLeft: '1rem', backgroundColor: '#007bff', color: 'white' }}
-              onClick={() => setMode(mode === "edit" ? "view" : "edit")}
-            >
-              {mode === "edit" ? "👁️ View Mode" : "✏️ Edit Mode"}
             </button>
           </>
         )}
