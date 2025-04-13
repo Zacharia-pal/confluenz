@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import FileTree from './components/FileTree'
+import { marked } from 'marked';  // Importing marked for markdown parsing
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
@@ -136,9 +137,10 @@ export default function App() {
                 onChange={(e) => setFileContent(e.target.value)}
               />
             ) : (
-              <div style={styles.fileContent}>
-                {fileContent}
-              </div>
+              <div
+                style={styles.fileContent}
+                dangerouslySetInnerHTML={{ __html: marked(fileContent) }}  // Use marked to render markdown
+              />
             )}
 
             {editMode && (
@@ -190,9 +192,9 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'row',
-    width: '100%',  // Ensure the container takes up the entire width
-    height: '100vh', // Full viewport height
-    minHeight: '100vh', // Prevent shrinking below viewport height
+    width: '100%',
+    height: '100vh',
+    minHeight: '100vh',
     gap: '2rem',
     padding: '1rem',
     backgroundColor: 'white',
@@ -208,7 +210,7 @@ const styles = {
     height: '100%',
     overflowY: 'auto',
     width: '100%',
-    maxWidth: '250px', // Sidebar has a max width
+    maxWidth: '250px',
   },
   header: {
     color: '#1e3a8a',
@@ -242,7 +244,7 @@ const styles = {
     height: '100%',
     overflowY: 'auto',
     width: '100%',
-    maxWidth: 'calc(100% - 300px)', // Ensures it does not overflow the sidebar
+    maxWidth: 'calc(100% - 300px)',  // Ensure it doesn't overflow
   },
   selectedPath: {
     color: '#1e3a8a',
@@ -296,4 +298,3 @@ const styles = {
     marginTop: '1rem',
   },
 }
-
