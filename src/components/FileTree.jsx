@@ -18,37 +18,22 @@ function buildTree(files) {
   return root
 }
 
-function renderTree(tree, pathPrefix = '', onSelect, selectedPath) {
+function renderTree(tree, pathPrefix = '', onSelect) {
   return Object.entries(tree).map(([name, value]) => {
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
-    const displayName = name.replace(/\.md$/, '')
 
     if (value.__file) {
-      const isActive = fullPath === selectedPath
       return (
         <li key={fullPath}>
-          📄{' '}
-          <button
-            style={{
-              fontWeight: isActive ? 'bold' : 'normal',
-              backgroundColor: isActive ? '#e0f7fa' : 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-            onClick={() => onSelect(fullPath)}
-          >
-            {displayName}
-          </button>
+          📄 <button onClick={() => onSelect(fullPath)}>{name}</button>
         </li>
       )
     } else {
       return (
         <li key={fullPath}>
-          📁 <details open={selectedPath?.startsWith(fullPath)}>
-            <summary>{displayName}</summary>
-            <ul style={{ marginLeft: '1rem' }}>
-              {renderTree(value, fullPath, onSelect, selectedPath)}
-            </ul>
+          📁 <details>
+            <summary>{name}</summary>
+            <ul>{renderTree(value, fullPath, onSelect)}</ul>
           </details>
         </li>
       )
@@ -76,7 +61,7 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
   return (
     <div>
       <h3>📘 Wiki Pages</h3>
-      <ul>{renderTree(fileTree, '', setSelectedPath, setSelectedPath.currentPath)}</ul>
+      <ul>{renderTree(fileTree, '', setSelectedPath)}</ul>
     </div>
   )
 }

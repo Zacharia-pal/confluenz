@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import FileTree from './components/FileTree'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
@@ -9,8 +9,6 @@ export default function App() {
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
-  const selectedPathRef = useRef(null)
-  selectedPathRef.current = selectedPath
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -97,40 +95,32 @@ export default function App() {
         </button>
 
         <br /><br />
-
-        <FileTree
-          token={token}
-          setSelectedPath={setSelectedPath}
-          repo={GITHUB_REPO}
-          branch={BRANCH}
-        />
+        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
       <div style={{ flex: 1 }}>
         {selectedPath && (
           <>
-            <h2>{selectedPath.replace(/\.md$/, '')}</h2>
-
+            <h2>{selectedPath}</h2>
             <button onClick={() => setEditMode(!editMode)}>
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
-
             <br /><br />
 
+            {/* ➕ Add subpage */}
             <button onClick={() => {
               const subName = prompt("Subpage name (e.g. notes.md)")
               if (!subName || !selectedPath || !token) return
 
-              const parentPath = selectedPath.endsWith('.md')
-                ? selectedPath.replace(/\.md$/, '')
-                : selectedPath
+              const parentDir = selectedPath.endsWith('/')
+                ? selectedPath
+                : selectedPath + '/'
 
-              const newSubPath = `${parentPath}/${subName}`
+              const newSubPath = `${parentDir}${subName}`
               createFile(newSubPath)
             }}>
               ➕ Add Subpage
             </button>
-
             <br /><br />
 
             {editMode ? (
@@ -161,7 +151,6 @@ export default function App() {
                 <button onClick={handleSave}>💾 Save</button>
               </>
             )}
-
             <button
               style={{ marginLeft: '1rem', backgroundColor: 'red', color: 'white' }}
               onClick={async () => {
