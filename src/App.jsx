@@ -19,6 +19,28 @@ function App() {
       <div style={{ width: '250px', borderRight: '1px solid #ccc', padding: '1rem' }}>
         <Login token={token} setToken={setToken} />
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
+<hr />
+<button onClick={() => {
+  const newPath = prompt("Enter new file path (e.g., folder/newpage.md)")
+  if (!newPath || !token) return
+
+  fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newPath}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: `Create ${newPath}`,
+      content: btoa("# New Page"),
+      branch: BRANCH,
+    }),
+  }).then(() => window.location.reload())
+}}>
+  ➕ New Page
+</button>
+
+        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
 
       <div style={{ flex: 1, padding: '1rem' }}>
@@ -38,6 +60,40 @@ function App() {
             onDone={() => setMode('view')}
           />
         )}
+
+{selectedPath && (
+  <button
+    style={{ background: 'red', color: 'white', marginLeft: '1rem' }}
+    onClick={async () => {
+      if (!confirm(`Delete ${selectedPath}?`)) return
+
+      // Get SHA first
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
+        headers: { Authorization: `token ${token}` },
+      })
+      const data = await res.json()
+
+      await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Delete ${selectedPath}`,
+          sha: data.sha,
+          branch: BRANCH,
+        }),
+      })
+
+      alert(`${selectedPath} deleted`)
+      window.location.reload()
+    }}
+  >
+    🗑 Delete
+  </button>
+)}
+
       </div>
     </div>
   )

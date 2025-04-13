@@ -1,13 +1,44 @@
 import React, { useEffect, useState } from 'react'
 
-async function fetchRepoTree(token, repo, branch) {
-  const res = await fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
-    headers: {
-      Authorization: `token ${token}`,
-    },
+function buildTree(files) {
+  const root = {}
+
+  for (const file of files) {
+    const parts = file.path.split('/')
+    let current = root
+
+    parts.forEach((part, i) => {
+      if (!current[part]) {
+        current[part] = i === parts.length - 1 ? { __file: file } : {}
+      }
+      current = current[part]
+    })
+  }
+
+  return root
+}
+
+function renderTree(tree, pathPrefix = '', onSelect) {
+  return Object.entries(tree).map(([name, value]) => {
+    const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
+
+    if (value.__file) {
+      return (
+        <li key={fullPath}>
+          📄 <button onClick={() => onSelect(fullPath)}>{name}</button>
+        </li>
+      )
+    } else {
+      return (
+        <li key={fullPath}>
+          📁 <details>
+            <summary>{name}</summary>
+            <ul>{renderTree(value, fullPath, onSelect)}</ul>
+          </details>
+        </li>
+      )
+    }
   })
-  const data = await res.json()
-  return data.tree.filter(item => item.type === 'blob' && item.path.endsWith('.md'))
 }
 
 export default function FileTree({ token, setSelectedPath, repo, branch }) {
@@ -15,21 +46,22 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
 
   useEffect(() => {
     if (!token) return
-    fetchRepoTree(token, repo, branch).then(setFiles)
+    fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
+      headers: { Authorization: `token ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        const markdownFiles = data.tree.filter(item => item.type === 'blob' && item.path.endsWith('.md'))
+        setFiles(markdownFiles)
+      })
   }, [token])
+
+  const fileTree = buildTree(files)
 
   return (
     <div>
-      <h3>📁 Pages</h3>
-      <ul>
-        {files.map(file => (
-          <li key={file.path}>
-            <button onClick={() => setSelectedPath(file.path)} style={{ background: 'none', border: 'none', textAlign: 'left' }}>
-              {file.path}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <h3>📘 Wiki Pages</h3>
+      <ul>{renderTree(fileTree, '', setSelectedPath)}</ul>
     </div>
   )
 }
