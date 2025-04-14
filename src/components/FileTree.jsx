@@ -1,53 +1,47 @@
 import React, { useEffect, useState } from 'react'
 
-function buildTree(files) {
+// Build a tree only from index.md files
+function buildIndexTree(files) {
   const root = {}
 
   for (const file of files) {
+    if (!file.path.endsWith('index.md')) continue
+
     const parts = file.path.split('/')
+    const folderPath = parts.slice(0, -1) // remove index.md
     let current = root
 
-    parts.forEach((part, i) => {
-      if (!current[part]) {
-        current[part] = i === parts.length - 1 ? { __file: file } : {}
-      }
+    folderPath.forEach((part, i) => {
+      if (!current[part]) current[part] = {}
       current = current[part]
     })
+
+    // Attach the index.md file at the folder level
+    current.__file = file
   }
 
   return root
 }
 
-function renderTree(tree, pathPrefix = '', onSelect) {
+function renderIndexTree(tree, pathPrefix = '', onSelect) {
   return Object.entries(tree).map(([name, value]) => {
+    if (name === '__file') return null // handled below
+
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
-
-    // Show folders with just an index.md
-    if (value.__file && value.__file.path.endsWith('index.md')) {
-      return (
-        <li key={fullPath}>
-          📄 <button onClick={() => onSelect(fullPath)}>{name.replace('index.md', '') || name}</button>
-          {value.subpages && (
-            <ul>{renderTree(value.subpages, fullPath, onSelect)}</ul>
-          )}
-        </li>
-      )
-    }
-
-    if (!value.__file) {
-      return (
-        <li key={fullPath}>
-          📁 <details>
-            <summary>{name}</summary>
-            <ul>{renderTree(value, fullPath, onSelect)}</ul>
-          </details>
-        </li>
-      )
-    }
+    const hasIndex = value.__file
 
     return (
       <li key={fullPath}>
-        📄 <button onClick={() => onSelect(fullPath)}>{name.replace('.md', '')}</button>
+        {hasIndex && (
+          <>
+            📄 <button onClick={() => onSelect(`${fullPath}/index.md`)}>{name}</button>
+          </>
+        )}
+        {Object.keys(value).some(k => k !== '__file') && (
+          <ul>
+            {renderIndexTree(value, fullPath, onSelect)}
+          </ul>
+        )}
       </li>
     )
   })
@@ -65,47 +59,22 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
       .then(res => res.json())
       .then(data => {
         const markdownFiles = (data.tree || []).filter(
-          item => item.type === 'blob' && item.path.endsWith('.md')
+          item => item.type === 'blob' && item.path.endsWith('index.md')
         )
 
-        const tree = buildTree(markdownFiles)
-
-        function addSubpages(tree) {
-          Object.entries(tree).forEach(([key, value]) => {
-            if (value.__file && value.__file.path.endsWith('index.md')) {
-              const subpages = Object.entries(tree).filter(([subKey, subValue]) =>
-                subValue.__file &&
-                subValue.__file.path.startsWith(`${key}/`) &&
-                subValue.__file.path.endsWith('index.md')
-              ).map(([subKey]) => subKey)
-
-              if (subpages.length > 0) {
-                value.subpages = buildTree(subpages.map(sub => ({
-                  path: `${key}/${sub}/index.md`,
-                  type: 'blob',
-                })))
-              }
-            }
-
-            if (value.subpages) {
-              addSubpages(value.subpages)
-            }
-          })
-        }
-
-        addSubpages(tree)
+        const tree = buildIndexTree(markdownFiles)
         setFileTree(tree)
       })
       .catch(err => {
         console.error("Failed to fetch file tree:", err)
         setFileTree({})
       })
-  }, [token])
+  }, [token, repo, branch])
 
   return (
     <div>
       <h3>📘 Wiki Pages</h3>
-      <ul>{renderTree(fileTree, '', setSelectedPath)}</ul>
+      <ul>{renderIndexTree(fileTree, '', setSelectedPath)}</ul>
     </div>
   )
 }
