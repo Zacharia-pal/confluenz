@@ -1,31 +1,29 @@
 import React, { useEffect, useState } from 'react'
 
-// Build a tree only from index.md files
+// Helper function to build the tree
 function buildIndexTree(files) {
   const root = {}
 
+  // Loop through files and build the hierarchical structure
   for (const file of files) {
-    if (!file.path.endsWith('index.md')) continue
-
     const parts = file.path.split('/')
-    const folderPath = parts.slice(0, -1) // remove index.md
     let current = root
 
-    folderPath.forEach((part, i) => {
-      if (!current[part]) current[part] = {}
+    parts.forEach((part, i) => {
+      if (!current[part]) {
+        current[part] = i === parts.length - 1 ? { __file: file } : {}
+      }
       current = current[part]
     })
-
-    // Attach the index.md file at the folder level
-    current.__file = file
   }
 
   return root
 }
 
-function renderIndexTree(tree, pathPrefix = '', onSelect) {
+// Function to render the tree-like structure for files/folders with the "Add Subpage" button
+function renderIndexTree(tree, pathPrefix = '', onSelect, onAddSubpage) {
   return Object.entries(tree).map(([name, value]) => {
-    if (name === '__file') return null // handled below
+    if (name === '__file') return null // Skip file-level handling here
 
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
     const hasIndex = value.__file
@@ -33,13 +31,16 @@ function renderIndexTree(tree, pathPrefix = '', onSelect) {
     return (
       <li key={fullPath}>
         {hasIndex && (
-          <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             📄 <button onClick={() => onSelect(`${fullPath}/index.md`)}>{name}</button>
-          </>
+            {onAddSubpage && (
+              <button onClick={() => onAddSubpage(fullPath)}>➕ Add Subpage</button>
+            )}
+          </div>
         )}
         {Object.keys(value).some(k => k !== '__file') && (
           <ul>
-            {renderIndexTree(value, fullPath, onSelect)}
+            {renderIndexTree(value, fullPath, onSelect, onAddSubpage)}
           </ul>
         )}
       </li>
@@ -47,9 +48,10 @@ function renderIndexTree(tree, pathPrefix = '', onSelect) {
   })
 }
 
-export default function FileTree({ token, setSelectedPath, repo, branch }) {
+export default function FileTree({ token, setSelectedPath, repo, branch, onAddSubpage }) {
   const [fileTree, setFileTree] = useState({})
 
+  // Fetch files from GitHub and build the tree
   useEffect(() => {
     if (!token) return
 
@@ -74,7 +76,7 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
   return (
     <div>
       <h3>📘 Wiki Pages</h3>
-      <ul>{renderIndexTree(fileTree, '', setSelectedPath)}</ul>
+      <ul>{renderIndexTree(fileTree, '', setSelectedPath, onAddSubpage)}</ul>
     </div>
   )
 }
