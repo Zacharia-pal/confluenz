@@ -10,7 +10,6 @@ export default function App() {
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
-  const [fileTree, setFileTree] = useState({})
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -39,7 +38,7 @@ export default function App() {
       })
   }, [selectedPath, token])
 
-  const handleSave = () => {
+  function handleSave() {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
       method: 'GET',
       headers: { Authorization: `token ${token}` }
@@ -74,10 +73,12 @@ export default function App() {
         content: btoa(defaultContent),
         branch: BRANCH,
       }),
-    }).then(() => {
-      // Refresh file tree after creating a new file
-      setFileTree(prevTree => ({ ...prevTree }))
-    })
+    }).then(() => window.location.reload())
+  }
+
+  const createFolder = (folderPath) => {
+    const placeholderFile = `${folderPath.replace(/\/$/, '')}/.gitkeep`
+    createFile(placeholderFile, "placeholder")
   }
 
   // onAddSubpage function to create a subpage
@@ -106,7 +107,7 @@ export default function App() {
       if (createFileResponse.ok) {
         console.log("Subpage created successfully!")
         // Refresh the file tree after subpage creation
-        setFileTree(prevTree => ({ ...prevTree }))  // Trigger UI update
+        setSelectedPath(null)  // Clear the selection to trigger a fresh load of the file tree
       } else {
         console.error("Failed to create subpage:", createFileResponse.statusText)
       }
@@ -155,23 +156,64 @@ export default function App() {
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
 
-            {/* Remove separate "Add Subpage" button, it's now managed by FileTree */}
-            {editMode && (
+            <button onClick={() => {
+              const subName = prompt("Subpage name (e.g. overview)")
+              if (!subName || !selectedPath || !token) return
+
+              const basePath = selectedPath.replace(/\/index\.md$/, "")
+              const newSubPath = `${basePath}/${subName}/index.md`
+              createFile(newSubPath)
+            }} style={styles.button}>
+              ➕ Add Subpage
+            </button>
+
+            {editMode ? (
               <textarea
                 style={styles.textarea}
                 value={fileContent}
                 onChange={(e) => setFileContent(e.target.value)}
               />
-            )}
-
-            {editMode ? (
-              <button onClick={handleSave} style={styles.saveButton}>💾 Save</button>
             ) : (
               <div
                 style={styles.fileContent}
                 dangerouslySetInnerHTML={{ __html: marked.parse(fileContent) }}
               />
             )}
+
+            {editMode && (
+              <button onClick={handleSave} style={styles.saveButton}>💾 Save</button>
+            )}
+
+            <button
+              style={styles.deleteButton}
+              onClick={async () => {
+                if (!confirm(`Are you sure you want to delete ${selectedPath}?`)) return
+
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
+                  headers: { Authorization: `token ${token}` },
+                })
+                const data = await res.json()
+
+                await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
+                  method: 'DELETE',
+                  headers: {
+                    Authorization: `token ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    message: `Delete ${selectedPath}`,
+                    sha: data.sha,
+                    branch: BRANCH,
+                  }),
+                })
+
+                alert("File deleted.")
+                setSelectedPath(null)
+                setFileContent("")
+              }}
+            >
+              🗑 Delete
+            </button>
           </>
         )}
       </div>
@@ -182,77 +224,102 @@ export default function App() {
 const styles = {
   container: {
     display: 'flex',
+    flexDirection: 'row',
+    width: '100vw',
     height: '100vh',
+    overflow: 'hidden',
+    backgroundColor: 'white',
     fontFamily: 'Arial, sans-serif',
   },
   sidebar: {
-    width: '300px',
-    backgroundColor: '#f4f4f4',
-    padding: '20px',
-    boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
+    flex: '0 0 250px',
+    backgroundColor: '#f5f5f5',
+    padding: '1rem',
+    borderRight: '1px solid #e0e0e0',
+    overflowY: 'auto',
   },
   header: {
-    textAlign: 'center',
-    fontSize: '2rem',
-    color: '#333',
+    color: '#1e3a8a',
+    fontSize: '24px',
+    fontWeight: 'bold',
+    marginBottom: '1rem',
   },
   input: {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '20px',
-    fontSize: '1rem',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
+    padding: '0.5rem',
+    width: '90%',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    marginBottom: '1rem',
   },
   button: {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '10px',
-    fontSize: '1rem',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#1e3a8a',
     color: 'white',
+    padding: '0.5rem',
+    width: '100%',
+    marginBottom: '0.5rem',
+    borderRadius: '6px',
     border: 'none',
-    borderRadius: '5px',
     cursor: 'pointer',
   },
   mainContent: {
     flex: 1,
-    padding: '20px',
+    padding: '2rem',
+    overflowY: 'auto',
+    backgroundColor: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column',
   },
   selectedPath: {
-    fontSize: '1.5rem',
-    marginBottom: '20px',
+    fontSize: '18px',
+    color: '#1e3a8a',
+    marginBottom: '1rem',
   },
   toggleButton: {
-    backgroundColor: '#ccc',
-    padding: '5px 10px',
-    marginBottom: '20px',
-    fontSize: '1rem',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    padding: '0.5rem',
     border: 'none',
+    borderRadius: '6px',
     cursor: 'pointer',
-    borderRadius: '5px',
+    marginBottom: '1rem',
   },
   textarea: {
-    width: '100%',
-    height: '300px',
-    padding: '10px',
-    fontSize: '1rem',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
-    marginBottom: '20px',
-  },
-  saveButton: {
-    padding: '10px 20px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    width: '90%',
+    height: '400px',
+    padding: '1rem',
+    fontFamily: 'monospace',
+    fontSize: '16px',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    marginBottom: '1rem',
   },
   fileContent: {
-    padding: '20px',
+    flex: 1,
+    width: '100%',
+    padding: '1rem',
     backgroundColor: '#f9f9f9',
-    borderRadius: '5px',
+    color: '#1f2937',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    lineHeight: 1.6,
+    overflowY: 'auto',
+  },
+  saveButton: {
+    backgroundColor: '#10b981',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    border: 'none',
+    cursor: 'pointer',
+    marginRight: '1rem',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+    color: 'white',
+    padding: '0.5rem 1rem',
+    borderRadius: '6px',
+    border: 'none',
+    cursor: 'pointer',
+    marginTop: '1rem',
   },
 }
-//
