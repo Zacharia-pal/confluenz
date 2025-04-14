@@ -4,7 +4,7 @@ import { marked } from 'marked'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
-const currentversion = "1.0.0"
+const currentversion = "1.0.1"
 
 export default function App() {
   const [token, setToken] = useState("")
