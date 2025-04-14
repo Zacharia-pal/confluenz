@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import FileTree from './components/FileTree'
 import { marked } from 'marked'
 
@@ -11,6 +11,9 @@ export default function App() {
   const [selectedPath, setSelectedPath] = useState(null)
   const [fileContent, setFileContent] = useState("")
   const [editMode, setEditMode] = useState(false)
+  
+  // Create a reference to refresh the file tree
+  const fileTreeRef = useRef(null);
 
   useEffect(() => {
     if (!selectedPath || !token) return
@@ -38,29 +41,6 @@ export default function App() {
         setFileContent("# Error loading file")
       })
   }, [selectedPath, token])
-
-  function handleSave() {
-    fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
-      method: 'GET',
-      headers: { Authorization: `token ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: `Update ${selectedPath}`,
-            content: btoa(fileContent),
-            sha: data.sha,
-            branch: BRANCH,
-          }),
-        }).then(() => alert("Saved!"))
-      })
-  }
 
   const createFile = (path, defaultContent = "# New Page") => {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${path}`, {
@@ -108,6 +88,7 @@ export default function App() {
       if (createFileResponse.ok) {
         console.log("Subpage created successfully!")
         // Refresh the file tree after subpage creation
+        fileTreeRef.current.refreshFileTree();  // Call the refresh method on FileTree
         setSelectedPath(null)  // Clear the selection to trigger a fresh load of the file tree
       } else {
         console.error("Failed to create subpage:", createFileResponse.statusText)
@@ -125,7 +106,7 @@ export default function App() {
           type="password"
           placeholder="Enter GitHub Token"
           value={token}
-          onChange={(e) => setToken(e.target.value)}
+          onChange={(e) => setToken(e.target.value.trim())}
           style={styles.input}
         />
 
@@ -146,7 +127,14 @@ export default function App() {
         </button>
 
         {/* Pass onAddSubpage to FileTree component */}
-        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} onAddSubpage={onAddSubpage} />
+        <FileTree 
+          token={token} 
+          setSelectedPath={setSelectedPath} 
+          repo={GITHUB_REPO} 
+          branch={BRANCH} 
+          onAddSubpage={onAddSubpage} 
+          ref={fileTreeRef} // Attach the ref here to be used for refreshing
+        />
       </div>
 
       <div style={styles.mainContent}>
@@ -181,7 +169,7 @@ export default function App() {
 
                 if (res.ok) {
                   alert("Subpage created successfully!")
-                  if (refreshFileTreeRef.current) refreshFileTreeRef.current()
+                  fileTreeRef.current.refreshFileTree(); // Refresh the file tree
                 } else {
                   const err = await res.json()
                   alert("Failed to create subpage: " + err.message)
