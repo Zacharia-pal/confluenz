@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from 'react'
 
-// Helper function to build the tree
+// Build a tree only from index.md files
 function buildIndexTree(files) {
   const root = {}
 
-  // Loop through files and build the hierarchical structure
   for (const file of files) {
+    if (!file.path.endsWith('index.md')) continue
+
     const parts = file.path.split('/')
+    const folderPath = parts.slice(0, -1) // remove index.md
     let current = root
 
-    parts.forEach((part, i) => {
-      if (!current[part]) {
-        current[part] = i === parts.length - 1 ? { __file: file } : {}
-      }
+    folderPath.forEach((part) => {
+      if (!current[part]) current[part] = {}
       current = current[part]
     })
+
+    // Attach the index.md file at the folder level
+    current.__file = file
   }
 
   return root
 }
 
-// Function to render the tree-like structure for files/folders with the "Add Subpage" button
+// Function to render the tree with "Add Subpage" functionality
 function renderIndexTree(tree, pathPrefix = '', onSelect, onAddSubpage) {
   return Object.entries(tree).map(([name, value]) => {
-    if (name === '__file') return null // Skip file-level handling here
+    if (name === '__file') return null // handled below
 
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
     const hasIndex = value.__file
