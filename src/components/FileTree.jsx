@@ -55,7 +55,7 @@ export default function FileTree({ token, setSelectedPath, repo, branch, onAddSu
   const [fileTree, setFileTree] = useState({})
 
   // Fetch files from GitHub and build the tree
-  useEffect(() => {
+  const fetchTree = () => {
     if (!token) return
 
     fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
@@ -74,33 +74,23 @@ export default function FileTree({ token, setSelectedPath, repo, branch, onAddSu
         console.error("Failed to fetch file tree:", err)
         setFileTree({})
       })
+  }
+
+  useEffect(() => {
+    fetchTree()
   }, [token, repo, branch])
 
-  // Callback to refresh the file tree after a subpage is added
-  const refreshFileTree = () => {
-    if (!token) return
-
-    fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
-      headers: { Authorization: `token ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        const markdownFiles = (data.tree || []).filter(
-          item => item.type === 'blob' && item.path.endsWith('index.md')
-        )
-
-        const tree = buildIndexTree(markdownFiles)
-        setFileTree(tree)
-      })
-      .catch(err => {
-        console.error("Failed to refresh file tree:", err)
-      })
-  }
+  const wrappedAddSubpage = onAddSubpage
+    ? async (parentPath) => {
+        await onAddSubpage(parentPath)
+        fetchTree() // refresh after creation
+      }
+    : null
 
   return (
     <div>
       <h3>📘 Wiki Pages</h3>
-      <ul>{renderIndexTree(fileTree, '', setSelectedPath, onAddSubpage ? (parentPath) => { onAddSubpage(parentPath); refreshFileTree(); } : null)}</ul>
+      <ul>{renderIndexTree(fileTree, '', setSelectedPath, wrappedAddSubpage)}</ul>
     </div>
   )
 }
