@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import FileTree from './components/FileTree'
-import { marked } from 'marked';  // Importing marked for markdown parsing
+import { marked } from 'marked'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
@@ -79,27 +79,22 @@ export default function App() {
           onChange={(e) => setToken(e.target.value)}
           style={styles.input}
         />
-        <br />
 
         <button onClick={() => {
-          const newPath = prompt("Enter new file path (e.g., folder/newfile.md)")
-          if (!newPath || !token) return
-          createFile(newPath)
+          const name = prompt("Enter page name (e.g. intro)")
+          if (!name || !token) return
+          createFile(`${name}/index.md`)
         }} style={styles.button}>
           ➕ New Page
         </button>
 
-        <br />
-
         <button onClick={() => {
-          const folderPath = prompt("Enter new folder path (e.g., docs/myfolder)")
-          if (!folderPath || !token) return
-          createFolder(folderPath)
+          const folder = prompt("Folder name (e.g. docs/guide)")
+          if (!folder || !token) return
+          createFolder(folder)
         }} style={styles.button}>
           📁 New Folder
         </button>
-
-        <br />
 
         <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
       </div>
@@ -111,25 +106,18 @@ export default function App() {
             <button onClick={() => setEditMode(!editMode)} style={styles.toggleButton}>
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
-            <br />
 
-            {/* Add Subpage */}
             <button onClick={() => {
-              const subName = prompt("Subpage name (e.g. notes.md)")
+              const subName = prompt("Subpage name (e.g. overview)")
               if (!subName || !selectedPath || !token) return
 
-              const parentDir = selectedPath.endsWith('/')
-                ? selectedPath
-                : selectedPath + '/'
-
-              const newSubPath = `${parentDir}${subName}`
+              const basePath = selectedPath.replace(/\/index\.md$/, "")
+              const newSubPath = `${basePath}/${subName}/index.md`
               createFile(newSubPath)
             }} style={styles.button}>
               ➕ Add Subpage
             </button>
-            <br />
 
-            {/* File Content Display or Edit */}
             {editMode ? (
               <textarea
                 style={styles.textarea}
@@ -139,18 +127,14 @@ export default function App() {
             ) : (
               <div
                 style={styles.fileContent}
-                dangerouslySetInnerHTML={{ __html: marked(fileContent) }}  // Use marked to render markdown
+                dangerouslySetInnerHTML={{ __html: marked.parse(fileContent) }}
               />
             )}
 
             {editMode && (
-              <>
-                <br />
-                <button onClick={handleSave} style={styles.saveButton}>💾 Save</button>
-              </>
+              <button onClick={handleSave} style={styles.saveButton}>💾 Save</button>
             )}
 
-            {/* Delete Button */}
             <button
               style={styles.deleteButton}
               onClick={async () => {
@@ -192,63 +176,51 @@ const styles = {
   container: {
     display: 'flex',
     flexDirection: 'row',
-    width: '100%',
+    width: '100vw',
     height: '100vh',
-    minHeight: '100vh',
-    gap: '2rem',
-    padding: '1rem',
+    overflow: 'hidden',
     backgroundColor: 'white',
-    color: '#333',
     fontFamily: 'Arial, sans-serif',
   },
   sidebar: {
     flex: '0 0 250px',
     backgroundColor: '#f5f5f5',
     padding: '1rem',
-    borderRadius: '8px',
-    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
-    height: '100%',
+    borderRight: '1px solid #e0e0e0',
     overflowY: 'auto',
-    width: '100%',
-    maxWidth: '250px',
   },
   header: {
     color: '#1e3a8a',
     fontSize: '24px',
     fontWeight: 'bold',
+    marginBottom: '1rem',
   },
   input: {
     padding: '0.5rem',
     width: '100%',
-    marginBottom: '1rem',
-    borderRadius: '8px',
+    borderRadius: '6px',
     border: '1px solid #ddd',
+    marginBottom: '1rem',
   },
   button: {
     backgroundColor: '#1e3a8a',
     color: 'white',
-    padding: '0.5rem 1rem',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    marginBottom: '1rem',
+    padding: '0.5rem',
     width: '100%',
-    fontSize: '16px',
+    marginBottom: '0.5rem',
+    borderRadius: '6px',
+    border: 'none',
+    cursor: 'pointer',
   },
   mainContent: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    padding: '1rem',
-    borderRadius: '8px',
-    boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.1)',
-    height: '100%',
+    padding: '2rem',
     overflowY: 'auto',
-    width: '100%',
-    maxWidth: 'calc(100% - 300px)',  // Ensure it doesn't overflow
+    backgroundColor: '#ffffff',
   },
   selectedPath: {
+    fontSize: '18px',
     color: '#1e3a8a',
-    fontSize: '20px',
     marginBottom: '1rem',
   },
   toggleButton: {
@@ -256,44 +228,43 @@ const styles = {
     color: 'white',
     padding: '0.5rem',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     marginBottom: '1rem',
   },
   textarea: {
     width: '100%',
-    height: '300px',
+    height: '400px',
     padding: '1rem',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
     fontFamily: 'monospace',
     fontSize: '16px',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    marginBottom: '1rem',
   },
   fileContent: {
     width: '100%',
     padding: '1rem',
     backgroundColor: '#f9f9f9',
-    whiteSpace: 'pre-wrap',
-    borderRadius: '8px',
+    borderRadius: '6px',
     border: '1px solid #ddd',
-    fontFamily: 'monospace',
-    fontSize: '16px',
+    lineHeight: 1.6,
   },
   saveButton: {
     backgroundColor: '#10b981',
     color: 'white',
     padding: '0.5rem 1rem',
+    borderRadius: '6px',
     border: 'none',
-    borderRadius: '8px',
     cursor: 'pointer',
-    marginTop: '1rem',
+    marginRight: '1rem',
   },
   deleteButton: {
     backgroundColor: '#ef4444',
     color: 'white',
     padding: '0.5rem 1rem',
+    borderRadius: '6px',
     border: 'none',
-    borderRadius: '8px',
     cursor: 'pointer',
     marginTop: '1rem',
   },
