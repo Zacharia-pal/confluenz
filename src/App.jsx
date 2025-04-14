@@ -157,16 +157,43 @@ export default function App() {
               {editMode ? "👁 View" : "✏️ Edit"}
             </button>
 
-            <button onClick={() => {
+            <button onClick={async () => {
               const subName = prompt("Subpage name (e.g. overview)")
               if (!subName || !selectedPath || !token) return
 
               const basePath = selectedPath.replace(/\/index\.md$/, "")
               const newSubPath = `${basePath}/${subName}/index.md`
-              createFile(newSubPath)
+              const content = "# New Subpage\n\nThis is a newly created subpage."
+
+              try {
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newSubPath}`, {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `token ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    message: `Create new subpage: ${subName}`,
+                    content: btoa(content),
+                    branch: BRANCH,
+                  }),
+                })
+
+                if (res.ok) {
+                  alert("Subpage created successfully!")
+                  if (refreshFileTreeRef.current) refreshFileTreeRef.current()
+                } else {
+                  const err = await res.json()
+                  alert("Failed to create subpage: " + err.message)
+                }
+              } catch (error) {
+                console.error("Error creating subpage:", error)
+                alert("Error creating subpage. Check console.")
+              }
             }} style={styles.button}>
               ➕ Add Subpage
             </button>
+
 
             {editMode ? (
               <textarea
