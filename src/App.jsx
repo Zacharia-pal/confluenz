@@ -210,7 +210,7 @@ const styles = {
   },
   input: {
     padding: '0.5rem',
-    width: '100%',
+    width: '90%',
     borderRadius: '6px',
     border: '1px solid #ddd',
     marginBottom: '1rem',
