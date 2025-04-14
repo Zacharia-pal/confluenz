@@ -106,7 +106,8 @@ export default function App() {
 
       if (createFileResponse.ok) {
         console.log("Subpage created successfully!")
-        // Optionally, you can refresh the file tree here after the subpage is created
+        // Refresh the file tree after subpage creation
+        setSelectedPath(null)  // Clear the selection to trigger a fresh load of the file tree
       } else {
         console.error("Failed to create subpage:", createFileResponse.statusText)
       }
