@@ -4,6 +4,7 @@ import { marked } from 'marked'
 
 const GITHUB_REPO = "zacharia-pal/confluenz"
 const BRANCH = "main"
+const currentversion = "1.0.0"
 
 export default function App() {
   const [token, setToken] = useState("")
@@ -119,7 +120,7 @@ export default function App() {
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
-        <h1 style={styles.header}>🧠 Confluenz</h1>
+        <h1 style={styles.header}>🧠 Confluenz {currentversion}</h1>
         <input
           type="password"
           placeholder="Enter GitHub Token"
