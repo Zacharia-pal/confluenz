@@ -217,6 +217,8 @@ const styles = {
     padding: '2rem',
     overflowY: 'auto',
     backgroundColor: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column',
   },
   selectedPath: {
     fontSize: '18px',
@@ -233,7 +235,7 @@ const styles = {
     marginBottom: '1rem',
   },
   textarea: {
-    width: '100%',
+    width: '90%',
     height: '400px',
     padding: '1rem',
     fontFamily: 'monospace',
@@ -243,12 +245,15 @@ const styles = {
     marginBottom: '1rem',
   },
   fileContent: {
+    flex: 1,
     width: '100%',
     padding: '1rem',
     backgroundColor: '#f9f9f9',
+    color: '#1f2937',
     borderRadius: '6px',
     border: '1px solid #ddd',
     lineHeight: 1.6,
+    overflowY: 'auto',
   },
   saveButton: {
     backgroundColor: '#10b981',

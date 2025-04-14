@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 
-// Build tree structure from flat file list
 function buildTree(files) {
   const root = {}
 
@@ -19,28 +18,39 @@ function buildTree(files) {
   return root
 }
 
-// Recursively render tree nodes
 function renderTree(tree, pathPrefix = '', onSelect) {
   return Object.entries(tree).map(([name, value]) => {
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
 
-    // Render markdown files (should only be index.md)
-    if (value.__file) {
-      const displayName = pathPrefix.split('/').slice(-1)[0] || 'Home'
+    // Special case: folder with only index.md
+    const hasOnlyIndex =
+      Object.keys(value).length === 1 && value['index.md']?.__file
+
+    if (hasOnlyIndex) {
+      const filePath = `${fullPath}/index.md`
       return (
-        <li key={fullPath}>
-          📄 <button onClick={() => onSelect(fullPath)}>{displayName}</button>
+        <li key={filePath}>
+          📄 <button onClick={() => onSelect(filePath)}>{name}</button>
         </li>
       )
     }
 
-    // Render folders recursively
+    // Folder with more than index.md (or nested subpages)
+    if (!value.__file) {
+      return (
+        <li key={fullPath}>
+          📁 <details>
+            <summary>{name}</summary>
+            <ul>{renderTree(value, fullPath, onSelect)}</ul>
+          </details>
+        </li>
+      )
+    }
+
+    // Single file (rare case now)
     return (
       <li key={fullPath}>
-        📁 <details>
-          <summary>{name}</summary>
-          <ul>{renderTree(value, fullPath, onSelect)}</ul>
-        </details>
+        📄 <button onClick={() => onSelect(fullPath)}>{name.replace('.md', '')}</button>
       </li>
     )
   })
@@ -57,9 +67,8 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
     })
       .then(res => res.json())
       .then(data => {
-        // Only keep index.md files to reflect page structure
         const markdownFiles = data.tree.filter(
-          item => item.type === 'blob' && item.path.endsWith('/index.md')
+          item => item.type === 'blob' && item.path.endsWith('.md')
         )
         setFiles(markdownFiles)
       })
