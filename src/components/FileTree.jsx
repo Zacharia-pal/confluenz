@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 
-// Function to build a tree-like structure for files/folders
 function buildTree(files) {
   const root = {}
 
@@ -20,16 +19,16 @@ function buildTree(files) {
   return root
 }
 
-// Function to render the file/folder structure recursively
+// Function to render the tree-like structure for files/folders
 function renderTree(tree, pathPrefix = '', onSelect) {
   return Object.entries(tree).map(([name, value]) => {
     const fullPath = pathPrefix ? `${pathPrefix}/${name}` : name
 
-    // Check if it's an index.md file, render accordingly
+    // Special case: folder with only index.md
     if (value.__file && value.__file.path.endsWith('index.md')) {
       return (
         <li key={fullPath}>
-          📄 <button onClick={() => onSelect(fullPath)}>{name.replace('index.md', '')}</button>
+          📄 <button onClick={() => onSelect(fullPath)}>{name.replace('index.md', '') || name}</button>
           {/* Render subpages (index.md inside subfolders) */}
           {value.subpages && (
             <ul>
@@ -38,13 +37,10 @@ function renderTree(tree, pathPrefix = '', onSelect) {
           )}
         </li>
       )
-    } else if (value.__file) {
-      return (
-        <li key={fullPath}>
-          📄 <button onClick={() => onSelect(fullPath)}>{name.replace('.md', '')}</button>
-        </li>
-      )
-    } else {
+    }
+
+    // Folder with more than index.md (or nested subpages)
+    if (!value.__file) {
       return (
         <li key={fullPath}>
           📁 <details>
@@ -54,6 +50,13 @@ function renderTree(tree, pathPrefix = '', onSelect) {
         </li>
       )
     }
+
+    // Single file (non-index)
+    return (
+      <li key={fullPath}>
+        📄 <button onClick={() => onSelect(fullPath)}>{name.replace('.md', '')}</button>
+      </li>
+    )
   })
 }
 
@@ -70,10 +73,10 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
       .then(data => {
         // Filter out files with '.md' extension
         const markdownFiles = data.tree.filter(item => item.type === 'blob' && item.path.endsWith('.md'))
-        
+
         // Process files into a tree structure
         const fileTree = buildTree(markdownFiles)
-        
+
         // Recursively add subpages (index.md files inside folders)
         function addSubpages(tree) {
           Object.entries(tree).forEach(([key, value]) => {
@@ -82,7 +85,7 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
               const subpages = Object.entries(tree).filter(([subKey, subValue]) => {
                 return subValue.__file && subValue.__file.path.startsWith(`${key}/`) && subValue.__file.path.endsWith('index.md')
               }).map(([subKey]) => subKey)
-              
+
               if (subpages.length > 0) {
                 value.subpages = buildTree(subpages.map(sub => ({
                   path: `${key}/${sub}/index.md`,
@@ -101,10 +104,12 @@ export default function FileTree({ token, setSelectedPath, repo, branch }) {
       })
   }, [token])
 
+  const fileTree = buildTree(files)
+
   return (
-    <div style={styles.fileTree}>
+    <div>
       <h3>📘 Wiki Pages</h3>
-      <ul>{renderTree(files, '', setSelectedPath)}</ul>
+      <ul>{renderTree(fileTree, '', setSelectedPath)}</ul>
     </div>
   )
 }
