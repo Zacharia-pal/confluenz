@@ -17,11 +17,24 @@ export default function App() {
     fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${selectedPath}?ref=${BRANCH}`, {
       headers: { Authorization: `token ${token}` },
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`GitHub API error: ${res.status} ${res.statusText}`)
+        }
+        return res.json()
+      })
       .then(data => {
+        if (!data.content) {
+          throw new Error("No content found in response.")
+        }
         const content = atob(data.content)
         setFileContent(content)
         setEditMode(false)
+      })
+      .catch(err => {
+        console.error("Failed to load file:", err)
+        alert("Failed to load file. Please check your token and path.")
+        setFileContent("# Error loading file")
       })
   }, [selectedPath, token])
 
