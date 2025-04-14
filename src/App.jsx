@@ -81,6 +81,40 @@ export default function App() {
     createFile(placeholderFile, "placeholder")
   }
 
+  // onAddSubpage function to create a subpage
+  const onAddSubpage = async (parentFolderPath) => {
+    const subpageName = prompt("Enter the name for the new subpage folder:", "NewSubPage")
+    if (!subpageName) return
+
+    const newSubpagePath = `${parentFolderPath}/${subpageName}/index.md`
+
+    // Content for the new index.md file
+    const content = "# New Subpage\n\nThis is a newly created subpage."
+
+    try {
+      // Create the new subpage (index.md)
+      const createFileResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${newSubpagePath}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+        },
+        body: JSON.stringify({
+          message: `Create new subpage: ${subpageName}`,
+          content: btoa(content),  // Base64 encode the content
+        }),
+      })
+
+      if (createFileResponse.ok) {
+        console.log("Subpage created successfully!")
+        // Optionally, you can refresh the file tree here after the subpage is created
+      } else {
+        console.error("Failed to create subpage:", createFileResponse.statusText)
+      }
+    } catch (error) {
+      console.error("Error creating subpage:", error)
+    }
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.sidebar}>
@@ -109,7 +143,8 @@ export default function App() {
           📁 New Folder
         </button>
 
-        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} />
+        {/* Pass onAddSubpage to FileTree component */}
+        <FileTree token={token} setSelectedPath={setSelectedPath} repo={GITHUB_REPO} branch={BRANCH} onAddSubpage={onAddSubpage} />
       </div>
 
       <div style={styles.mainContent}>
